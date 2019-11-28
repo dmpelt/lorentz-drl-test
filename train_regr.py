@@ -21,9 +21,12 @@ Run generatedata.py first to generate required training data.
 # Import code
 import msdnet
 from pathlib import Path
+import sys
+
+datdir = sys.argv[1]
 
 # Define dilations in [1,10] as in paper.
-dilations = msdnet.dilations.IncrementDilations(10)
+dilations = msdnet.dilations.IncrementDilations(5)
 
 # Create main network object for regression, with 100 layers,
 # [1,10] dilations, 1 input channel, 1 output channel, using
@@ -35,8 +38,8 @@ n.initialize()
 
 # Define training data
 # First, create lists of input files (noisy) and target files (noiseless)
-flsin = sorted(Path('data').glob('inp*.tiff'))
-flstg = sorted(Path('data').glob('tar*.tiff'))
+flsin = sorted(Path(datdir).glob('inp*.tiff'))
+flstg = sorted(Path(datdir).glob('tar*.tiff'))
 # Create list of datapoints (i.e. input/target pairs)
 dats = []
 for i in range(len(flsin)-100):
@@ -72,12 +75,12 @@ t = msdnet.train.AdamAlgorithm(n)
 # Log error metrics to console
 consolelog = msdnet.loggers.ConsoleLogger()
 # Log error metrics to file
-filelog = msdnet.loggers.FileLogger('log_regr.txt')
+filelog = msdnet.loggers.FileLogger('log_regr_'+datdir+'.txt')
 # Log typical, worst, and best images to image files
-imagelog = msdnet.loggers.ImageLogger('log_regr', onlyifbetter=True)
+imagelog = msdnet.loggers.ImageLogger('log_regr_'+datdir, onlyifbetter=True)
 
 # Train network until program is stopped manually
 # Network parameters are saved in regr_params.h5
 # Validation is run after every len(datsv) (=25)
 # training steps.
-msdnet.train.train(n, t, val, bprov, 'regr_params.h5',loggers=[consolelog,filelog,imagelog], val_every=1, progress=True)
+msdnet.train.train(n, t, val, bprov, 'regr_params_'+datdir+'.h5',loggers=[consolelog,filelog,imagelog], val_every=1, progress=True)

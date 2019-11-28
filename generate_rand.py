@@ -14,6 +14,12 @@ def genphantom(sz=128):
 
 def gentraindata():
     x = genphantom()
+    angs = np.random.random(nang)*np.pi
+    angs[0] = 0
+    pg = astra.create_proj_geom('parallel', 1, 256, angs)
+    vg = astra.create_vol_geom(128)
+    pid = astra.create_projector('cuda',pg,vg)
+    w = astra.OpTomo(pid)
     sino = w*x
     currec = w.reconstruct('SIRT_CUDA', sino, 100)
     ran_ang = np.random.random(2)*np.pi
@@ -23,6 +29,7 @@ def gentraindata():
     gt = w2*x
     cur = w2*currec
     astra.projector.delete(pid2)
+    astra.projector.delete(pid)
     inp = np.zeros((2,128,128), dtype=np.float32)
     tar = np.zeros((1, 128, 128), dtype=np.float32)
     inp[0] = currec
@@ -32,15 +39,11 @@ def gentraindata():
 
 if __name__=='__main__':
     nang = int(sys.argv[1])
-    pg = astra.create_proj_geom('parallel', 1, 256, np.linspace(0, np.pi, nang, False))
-    vg = astra.create_vol_geom(128)
-    pid = astra.create_projector('cuda',pg,vg)
-    w = astra.OpTomo(pid)
 
     import os
     import tqdm
     import tifffile
-    dr = 'data{}'.format(nang)
+    dr = 'datarand{}'.format(nang)
     os.makedirs(dr, exist_ok=True)
 
     inps = np.zeros((10000, 2, 128, 128), dtype=np.float32)
